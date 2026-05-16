@@ -6,9 +6,9 @@ class DHTRoomSensor {
 public:
     DHTRoomSensor(uint8_t pin, uint8_t type);
 
-    void  mulai();
-    float bacaTemperature();  // dalam Celsius
-    float bacaHumidity();     // dalam %RH
+    void  begin();
+    float readTemperature();  // dalam Celsius
+    float readHumidity();     // dalam %RH
     bool  isValid();          // true jika bacaan terakhir tidak NaN
 
 private:

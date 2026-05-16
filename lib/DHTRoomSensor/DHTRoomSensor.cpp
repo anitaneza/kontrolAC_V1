@@ -1,7 +1,7 @@
 #include "DHTRoomSensor.h"
 #include <Arduino.h>
 
-// Interval minimum baca DHT22 adalah 2 detik
+// Interval minimum read DHT22 adalah 2 detik
 static const unsigned long READ_INTERVAL_MS = 2000;
 
 DHTRoomSensor::DHTRoomSensor(uint8_t pin, uint8_t type)
@@ -9,11 +9,11 @@ DHTRoomSensor::DHTRoomSensor(uint8_t pin, uint8_t type)
 {
 }
 
-void DHTRoomSensor::mulai() {
+void DHTRoomSensor::begin() {
     _dht.begin();
 }
 
-float DHTRoomSensor::bacaTemperature() {
+float DHTRoomSensor::readTemperature() {
     float t = _dht.readTemperature();
     if (!isnan(t)) {
         _lastTemp = t;
@@ -24,7 +24,7 @@ float DHTRoomSensor::bacaTemperature() {
     return _lastTemp;
 }
 
-float DHTRoomSensor::bacaHumidity() {
+float DHTRoomSensor::readHumidity() {
     float h = _dht.readHumidity();
     if (!isnan(h)) {
         _lastHumid = h;
