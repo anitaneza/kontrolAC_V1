@@ -78,11 +78,11 @@
 #define FUZZY_INTERVAL_MS   10000UL
 
 // ─── AC Auto Off Timer ─────────────────────────────────────────
-#define AC_OFF_DELAY_MS         (15UL * 60UL * 1000UL)  // 15 menit
+#define AC_OFF_DELAY_MS         (1UL * 60UL * 1000UL)  // 15 menit
 
 // ─── WiFi ──────────────────────────────────────────────────────
-#define WIFI_SSID   "backup"
-#define WIFI_PASS   "backup1234"
+#define WIFI_SSID   "Infinix Hot"
+#define WIFI_PASS   "12345671"
 
 // ─── MQTT Broker ───────────────────────────────────────────────
 #define MQTT_BROKER   "broker.hivemq.com"  
