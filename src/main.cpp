@@ -164,7 +164,15 @@ void onMqttMessage(const char* topic, const char* payload) {
             Serial.printf("[IRRawCodes] Key '%s' disimpan ke SPIFFS.\n", pendingCaptureKey);
 
             // Kirim ke IRLog Apps Script
-            httpLogger.sendIRLog(SHEET_IR_LOG, pendingCaptureKey, "IR raw updated");
+            // httpLogger.sendIRLog(SHEET_IR_LOG, pendingCaptureKey, "IR raw updated");
+            // Kirim ke IRLog Apps Script dengan raw data
+            httpLogger.sendIRLog(
+                SHEET_IR_LOG,
+                pendingCaptureKey,
+                pendingRawBuf,
+                pendingRawLen,
+                "IR raw updated"
+            );
         } else {
             Serial.println("[IRRawCodes] Konfirmasi tidak cocok, data diabaikan.");
         }

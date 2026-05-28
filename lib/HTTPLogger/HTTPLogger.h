@@ -11,7 +11,8 @@ public:
     bool sendSensorLog(const char* sheetName, float suhuAvg, float kelembabanAvg);
     bool sendStatusLog(const char* sheetName, const char* pirStatus,
                        const char* acStatus, int acSetpoint, int fuzzySetpoint);
-    bool sendIRLog(const char* sheetName, const char* key, const char* keterangan);
+    bool sendIRLog(const char* sheetName, const char* key,
+                   const uint16_t* rawBuf, uint16_t rawLen, const char* keterangan);
 
 private:
     const char* _scriptUrl;

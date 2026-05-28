@@ -11,8 +11,9 @@ bool HTTPLogger::_post(JsonDocument& doc) {
     http.addHeader("Content-Type", "application/json");
     http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    char jsonStr[512];
-    serializeJson(doc, jsonStr, sizeof(jsonStr));
+    // IRLog bisa lebih besar karena ada raw data
+    String jsonStr;
+    serializeJson(doc, jsonStr);
 
     int httpCode = http.POST(jsonStr);
 
@@ -58,11 +59,19 @@ bool HTTPLogger::sendStatusLog(const char* sheetName, const char* pirStatus,
     return _post(doc);
 }
 
-bool HTTPLogger::sendIRLog(const char* sheetName, const char* key, const char* keterangan) {
+bool HTTPLogger::sendIRLog(const char* sheetName, const char* key,
+                            const uint16_t* rawBuf, uint16_t rawLen,
+                            const char* keterangan) {
     JsonDocument doc;
     doc["sheet"]      = sheetName;
     doc["key"]        = key;
     doc["keterangan"] = keterangan;
+
+    JsonArray arr = doc["raw"].to<JsonArray>();
+    for (uint16_t i = 0; i < rawLen; i++) {
+        arr.add(rawBuf[i]);
+    }
+
     Serial.println("[HTTP] Kirim IRLog...");
     return _post(doc);
 }
