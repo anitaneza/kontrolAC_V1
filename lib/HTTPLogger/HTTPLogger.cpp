@@ -1,40 +1,40 @@
 #include "HTTPLogger.h"
+#include <WiFiClientSecure.h>
 
 HTTPLogger::HTTPLogger(const char* scriptUrl)
     : _scriptUrl(scriptUrl)
 {
 }
 
-bool HTTPLogger::_post(JsonDocument& doc) {
-    HTTPClient http;
-    http.begin(_scriptUrl);
-    http.addHeader("Content-Type", "application/json");
-    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    // IRLog bisa lebih besar karena ada raw data
+bool HTTPLogger::_post(JsonDocument& doc) {
+    delay(100);
+    WiFiClientSecure client;
+    client.setInsecure();
+
+    HTTPClient http;
+    http.begin(client, _scriptUrl);
+    http.addHeader("Content-Type", "application/json");
+    http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
     String jsonStr;
     serializeJson(doc, jsonStr);
 
+    // Serial.println("[HTTP] Payload: " + jsonStr);
+
     int httpCode = http.POST(jsonStr);
 
+    // Serial.printf("[HTTP] rc=%d\n", httpCode);
+    // Serial.println("[HTTP] Response: " + http.getString());
+
+    http.end();
+
     if (httpCode == 200 || httpCode == 302) {
-        http.end();
+        Serial.println("[HTTP] Berhasil.");
         return true;
     }
 
-    Serial.printf("[HTTP] Gagal rc=%d, retry...\n", httpCode);
-    http.end();
-    delay(3000);
-
-    http.begin(_scriptUrl);
-    http.addHeader("Content-Type", "application/json");
-    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-    httpCode = http.POST(jsonStr);
-    http.end();
-
-    if (httpCode == 200 || httpCode == 302) return true;
-
-    Serial.printf("[HTTP] Retry gagal rc=%d, data dibuang.\n", httpCode);
+    Serial.printf("[HTTP] Gagal rc=%d\n", httpCode);
     return false;
 }
 

@@ -75,7 +75,7 @@
 #define RULE_22  0   // Panas  + Tinggi  → Rendah
 
 // ─── Apps Script ───────────────────────────────────────────────
-#define APPS_SCRIPT_URL   "https://script.google.com/macros/s/XXXXXXX/exec"
+#define APPS_SCRIPT_URL   "https://script.google.com/macros/s/AKfycbxgyE1bWy1xmzQGGNZ4w99J3wNVTA4KigVs6QVcLmsLu5t8DtGEPKnGlrryG-2BeI-T/exec"
 #define SHEET_SENSOR_LOG  "ESP1_SensorLog"
 #define SHEET_STATUS_LOG  "ESP1_StatusLog"
 #define SHEET_IR_LOG      "ESP1_IRLog"
@@ -91,8 +91,8 @@
 #define AC_OFF_DELAY_MS         (1UL * 60UL * 1000UL)  // 15 menit
 
 // ─── WiFi ──────────────────────────────────────────────────────
-#define WIFI_SSID   "Infinix Hot"
-#define WIFI_PASS   "12345671"
+#define WIFI_SSID   "backup"
+#define WIFI_PASS   "backup1234"
 
 // ─── MQTT Broker ───────────────────────────────────────────────
 #define MQTT_BROKER   "broker.hivemq.com"  
