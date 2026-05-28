@@ -9,6 +9,7 @@
 #include "IRReceiverCapture.h"
 #include "PIRSensor.h"
 #include "FuzzyMamdani.h"
+#include "HTTPLogger.h"
 #include <ArduinoJson.h>
 
 // ─── State ─────────────────────────────────────────────────────
@@ -27,16 +28,32 @@ uint16_t pendingRawBuf[200]      = {};
 uint16_t pendingRawLen           = 0;
 
 // ─── PIR & AC ──────────────────────────────────────────────────
-bool          isOccupied         = false;
-bool          isACOn             = false;
-bool          isEmptyTimerActive = false;
-unsigned long emptyStartTime     = 0;
+bool          isOccupied          = false;
+bool          isACOn              = false;
+bool          isEmptyTimerActive  = false;
+unsigned long emptyStartTime      = 0;
 
 // ─── Fuzzy ─────────────────────────────────────────────────────
-int           lastSetpoint       = -1;
-unsigned long lastFuzzyTime      = 0;
+int           lastSetpoint        = -1;
+unsigned long lastFuzzyTime       = 0;
 
-// ─── Inisialisasi objek Fuzzy dari config.h ────────────────────
+// ─── Averaging Sensor ──────────────────────────────────────────
+float         suhuAccum           = 0;
+float         kelembabanAccum     = 0;
+int           readCount           = 0;
+unsigned long lastReadTime        = 0;
+unsigned long lastSendTime        = 0;
+
+// ─── Nilai Terakhir untuk StatusLog ────────────────────────────
+String        lastPIRStatus       = "empty";
+String        lastACStatus        = "off";
+int           lastACSetpoint      = 0;
+int           lastFuzzySetpoint   = 0;
+
+// ─── Flag perubahan status ─────────────────────────────────────
+bool          statusChanged       = false;
+
+// ─── Inisialisasi Fuzzy dari config.h ──────────────────────────
 TempMF tempMF = {
     { TEMP_DINGIN_A, TEMP_DINGIN_B, TEMP_DINGIN_C, TEMP_DINGIN_D },
     { TEMP_NYAMAN_A, TEMP_NYAMAN_B, TEMP_NYAMAN_C },
@@ -71,10 +88,26 @@ IRTransmitterACController irTx(IR_TX_PIN, irCodes);
 IRReceiverCapture         irRx(IR_RX_PIN);
 PIRSensor                 pir(PIR_PIN);
 FuzzyMamdani              fuzzy(tempMF, humidMF, setpointMF, ruleBase);
+HTTPLogger                httpLogger(APPS_SCRIPT_URL);
 
-// ─── Interval publish sensor DHT ───────────────────────────────
-static const unsigned long PUBLISH_INTERVAL_MS = 5000;
-unsigned long lastPublishTime = 0;
+
+// ─── Fungsi bantu: kirim StatusLog ─────────────────────────────
+void sendStatusLog() {
+    // MQTT kirim kolom yang berubah
+    mqtt.publish(TOPIC_PIR_STATUS,    lastPIRStatus.c_str());
+    mqtt.publish(TOPIC_AC_STATUS,     lastACStatus.c_str());
+    mqtt.publish(TOPIC_FUZZY_SETPOINT, (float)lastFuzzySetpoint, 0);
+
+    // Apps Script kirim semua kolom
+    httpLogger.sendStatusLog(
+        SHEET_STATUS_LOG,
+        lastPIRStatus.c_str(),
+        lastACStatus.c_str(),
+        lastACSetpoint,
+        lastFuzzySetpoint
+    );
+    statusChanged = false;
+}
 
 // ─── Fungsi bantu AC ───────────────────────────────────────────
 void turnACOn() {
@@ -82,7 +115,9 @@ void turnACOn() {
     irTx.sendKey("on");
     isACOn             = true;
     isEmptyTimerActive = false;
-    lastSetpoint       = -1; // reset supaya fuzzy langsung kirim setpoint
+    lastSetpoint       = -1;
+    lastACStatus       = "on";
+    statusChanged      = true;
     mqtt.publish(TOPIC_AC_STATUS, "on");
     Serial.println("[AC] Dinyalakan.");
 }
@@ -92,6 +127,9 @@ void turnACOff() {
     irTx.sendKey("off");
     isACOn             = false;
     isEmptyTimerActive = false;
+    lastACStatus       = "off";
+    lastACSetpoint     = 0;
+    statusChanged      = true;
     mqtt.publish(TOPIC_AC_STATUS, "off");
     Serial.println("[AC] Dimatikan.");
 }
@@ -124,6 +162,9 @@ void onMqttMessage(const char* topic, const char* payload) {
         if (strcmp(payload, pendingCaptureKey) == 0) {
             irCodes.update(pendingCaptureKey, pendingRawBuf, pendingRawLen);
             Serial.printf("[IRRawCodes] Key '%s' disimpan ke SPIFFS.\n", pendingCaptureKey);
+
+            // Kirim ke IRLog Apps Script
+            httpLogger.sendIRLog(SHEET_IR_LOG, pendingCaptureKey, "IR raw updated");
         } else {
             Serial.println("[IRRawCodes] Konfirmasi tidak cocok, data diabaikan.");
         }
@@ -158,6 +199,9 @@ void setup() {
 
     irTx.begin();
 
+    lastReadTime = millis();
+    lastSendTime = millis();
+
     Serial.println("Sistem siap. State: NORMAL");
 }
 
@@ -167,22 +211,44 @@ void loop() {
 
     // ── STATE: NORMAL ──────────────────────────────────────────
     if (currentState == STATE_NORMAL) {
-
         unsigned long now = millis();
 
-        // Publish sensor DHT setiap 5 detik
-        if (now - lastPublishTime >= PUBLISH_INTERVAL_MS) {
-            lastPublishTime = now;
+        // Baca sensor setiap 1 detik
+        if (now - lastReadTime >= DATA_READ_INTERVAL_MS) {
+            lastReadTime = now;
 
             float suhu       = roomSensor.readTemperature();
             float kelembaban = roomSensor.readHumidity();
 
             if (roomSensor.isValid()) {
-                mqtt.publish(TOPIC_ROOM_TEMP,  suhu);
-                mqtt.publish(TOPIC_ROOM_HUMID, kelembaban);
-                Serial.printf("[Sensor] Suhu: %.2f°C | Kelembaban: %.2f%%\n", suhu, kelembaban);
-            } else {
-                Serial.println("[Sensor] Gagal baca, data tidak dikirim.");
+                suhuAccum      += suhu;
+                kelembabanAccum += kelembaban;
+                readCount++;
+            }
+        }
+
+        // Kirim rata-rata setiap 1 menit
+        if (now - lastSendTime >= DATA_SEND_INTERVAL_MS) {
+            lastSendTime = now;
+
+            if (readCount > 0) {
+                float suhuAvg       = suhuAccum / readCount;
+                float kelembabanAvg = kelembabanAccum / readCount;
+
+                // Reset akumulator
+                suhuAccum       = 0;
+                kelembabanAccum = 0;
+                readCount       = 0;
+
+                // Publish MQTT
+                mqtt.publish(TOPIC_ROOM_TEMP,  suhuAvg);
+                mqtt.publish(TOPIC_ROOM_HUMID, kelembabanAvg);
+
+                // Kirim ke Apps Script
+                httpLogger.sendSensorLog(SHEET_SENSOR_LOG, suhuAvg, kelembabanAvg);
+
+                Serial.printf("[Sensor] Avg Suhu: %.2f°C | Avg Kelembaban: %.2f%%\n",
+                              suhuAvg, kelembabanAvg);
             }
         }
 
@@ -192,23 +258,30 @@ void loop() {
         if (pirDetected && !isOccupied) {
             isOccupied         = true;
             isEmptyTimerActive = false;
-            mqtt.publish(TOPIC_PIR_STATUS, "detected");
+            lastPIRStatus      = "detected";
+            statusChanged      = true;
             Serial.println("[PIR] Orang terdeteksi.");
             turnACOn();
 
         } else if (!pirDetected && isOccupied) {
             isOccupied         = false;
             isEmptyTimerActive = true;
-            emptyStartTime     = millis();
-            mqtt.publish(TOPIC_PIR_STATUS, "empty");
+            emptyStartTime     = now;
+            lastPIRStatus      = "empty";
+            statusChanged      = true;
             Serial.println("[PIR] Ruangan kosong, timer mulai.");
 
         } else if (!pirDetected && isEmptyTimerActive) {
-            if (millis() - emptyStartTime >= AC_OFF_DELAY_MS) {
+            if (now - emptyStartTime >= AC_OFF_DELAY_MS) {
                 isEmptyTimerActive = false;
                 Serial.println("[PIR] Timer habis, matikan AC.");
                 turnACOff();
             }
+        }
+
+        // Kirim StatusLog kalau ada perubahan
+        if (statusChanged) {
+            sendStatusLog();
         }
 
         // Fuzzy setiap 10 detik, hanya kalau AC menyala
@@ -227,22 +300,24 @@ void loop() {
                 Serial.printf("[Fuzzy] Setpoint crisp: %.2f → %d°C\n",
                               result.crispSetpoint, result.setpointInt);
 
-                // Kirim ke AC hanya kalau setpoint berubah
+                // Kirim ke AC dan log hanya kalau setpoint berubah
                 if (result.setpointInt != lastSetpoint) {
                     char keyBuf[4];
                     snprintf(keyBuf, sizeof(keyBuf), "%d", result.setpointInt);
                     irTx.sendKey(keyBuf);
-                    lastSetpoint = result.setpointInt;
-                    Serial.printf("[IR] Setpoint dikirim: %d°C\n", result.setpointInt);
-                }
 
-                // Publish hasil fuzzy ke MQTT
-                mqtt.publish(TOPIC_FUZZY_SETPOINT,   (float)result.setpointInt, 0);
-                mqtt.publish(TOPIC_FUZZY_TEMP,        suhu);
-                mqtt.publish(TOPIC_FUZZY_HUMIDITY,    kelembaban);
-                mqtt.publish(TOPIC_FUZZY_FIRING_LOW,  result.firingRendah);
-                mqtt.publish(TOPIC_FUZZY_FIRING_MID,  result.firingSedang);
-                mqtt.publish(TOPIC_FUZZY_FIRING_HIGH, result.firingTinggi);
+                    lastSetpoint      = result.setpointInt;
+                    lastACSetpoint    = result.setpointInt;
+                    lastFuzzySetpoint = result.setpointInt;
+                    statusChanged     = true;
+
+                    Serial.printf("[IR] Setpoint dikirim: %d°C\n", result.setpointInt);
+
+                    // Publish firing ke MQTT
+                    mqtt.publish(TOPIC_FUZZY_FIRING_LOW,  result.firingRendah);
+                    mqtt.publish(TOPIC_FUZZY_FIRING_MID,  result.firingSedang);
+                    mqtt.publish(TOPIC_FUZZY_FIRING_HIGH, result.firingTinggi);
+                }
             } else {
                 Serial.println("[Fuzzy] Sensor gagal baca, fuzzy dilewati.");
             }
@@ -261,9 +336,10 @@ void loop() {
 
             char jsonStr[2048];
             serializeJson(doc, jsonStr, sizeof(jsonStr));
-            mqtt.publish(TOPIC_CAPTURE_RESULT, "Terdeteksi");
+            mqtt.publish(TOPIC_CAPTURE_RESULT, jsonStr);
 
-            Serial.printf("[IRReceiver] Capture selesai, %d sinyal. Menunggu konfirmasi...\n", pendingRawLen);
+            Serial.printf("[IRReceiver] Capture selesai, %d sinyal. Menunggu konfirmasi...\n",
+                          pendingRawLen);
             currentState = STATE_WAITING_CONFIRM;
         }
     }

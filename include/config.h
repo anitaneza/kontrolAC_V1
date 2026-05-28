@@ -74,6 +74,16 @@
 #define RULE_21  0   // Panas  + Sedang  → Rendah
 #define RULE_22  0   // Panas  + Tinggi  → Rendah
 
+// ─── Apps Script ───────────────────────────────────────────────
+#define APPS_SCRIPT_URL   "https://script.google.com/macros/s/XXXXXXX/exec"
+#define SHEET_SENSOR_LOG  "ESP1_SensorLog"
+#define SHEET_STATUS_LOG  "ESP1_StatusLog"
+#define SHEET_IR_LOG      "ESP1_IRLog"
+
+// ─── Interval ──────────────────────────────────────────────────
+#define DATA_READ_INTERVAL_MS   1000UL    // baca sensor tiap 1 detik
+#define DATA_SEND_INTERVAL_MS   60000UL   // kirim avg tiap 1 menit
+
 // ─── Fuzzy: Interval komputasi ─────────────────────────────────
 #define FUZZY_INTERVAL_MS   10000UL
 
