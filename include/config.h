@@ -75,7 +75,7 @@
 #define RULE_22  0   // Panas  + Tinggi  → Rendah
 
 // ─── Apps Script ───────────────────────────────────────────────
-#define APPS_SCRIPT_URL   "https://script.google.com/macros/s/AKfycbxgyE1bWy1xmzQGGNZ4w99J3wNVTA4KigVs6QVcLmsLu5t8DtGEPKnGlrryG-2BeI-T/exec"
+#define APPS_SCRIPT_URL   "https://script.google.com/macros/s/AKfycbx6ntzH26KpNRt4Zzrv2HxCc4okhMjO9d_AHOouuFswfhcT52jlP1ZIetC3l5d8-9xR/exec"
 #define SHEET_SENSOR_LOG  "ESP1_SensorLog"
 #define SHEET_STATUS_LOG  "ESP1_StatusLog"
 #define SHEET_IR_LOG      "ESP1_IRLog"
