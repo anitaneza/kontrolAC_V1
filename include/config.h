@@ -1,16 +1,16 @@
 #pragma once
 
 // ─── DHT Room Sensor ───────────────────────────────────────────
-#define DHT_PIN     4
+#define DHT_PIN     18
 #define DHT_TYPE    DHT22
 
 // ─── IR ────────────────────────────────────────────────────────
-#define IR_TX_PIN   15
-#define IR_RX_PIN   18
+#define IR_TX_PIN   4
+#define IR_RX_PIN   5
 #define IR_RAW_LEN  139
 
 // ─── PIR Sensor ────────────────────────────────────────────────
-#define PIR_PIN     14
+#define PIR_PIN     13
 
 // ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
 // Trapesium kiri  : [a, b, c, d]
