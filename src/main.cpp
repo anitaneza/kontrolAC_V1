@@ -90,7 +90,6 @@ PIRSensor                 pir(PIR_PIN);
 FuzzyMamdani              fuzzy(tempMF, humidMF, setpointMF, ruleBase);
 HTTPLogger                httpLogger(APPS_SCRIPT_URL);
 
-
 // ─── Fungsi bantu: kirim StatusLog ─────────────────────────────
 void sendStatusLog() {
     // MQTT kirim kolom yang berubah
@@ -229,6 +228,10 @@ void loop() {
             float kelembaban = roomSensor.readHumidity();
 
             if (roomSensor.isValid()) {
+                // Kalibrasi
+                suhu       += DHT_TEMP_OFFSET;
+                kelembaban += DHT_HUMID_OFFSET;
+
                 suhuAccum      += suhu;
                 kelembabanAccum += kelembaban;
                 readCount++;
@@ -300,6 +303,9 @@ void loop() {
             float kelembaban = roomSensor.readHumidity();
 
             if (roomSensor.isValid()) {
+                suhu       += DHT_TEMP_OFFSET;
+                kelembaban += DHT_HUMID_OFFSET;
+
                 FuzzyResult result = fuzzy.compute(suhu, kelembaban);
 
                 Serial.printf("[Fuzzy] Suhu: %.2f | Kelembaban: %.2f\n", suhu, kelembaban);

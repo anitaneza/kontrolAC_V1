@@ -3,6 +3,8 @@
 // ─── DHT Room Sensor ───────────────────────────────────────────
 #define DHT_PIN     18
 #define DHT_TYPE    DHT22
+#define DHT_TEMP_OFFSET   -3.0f
+#define DHT_HUMID_OFFSET   2.0f
 
 // ─── IR ────────────────────────────────────────────────────────
 #define IR_TX_PIN   4
@@ -10,14 +12,14 @@
 #define IR_RAW_LEN  139
 
 // ─── PIR Sensor ────────────────────────────────────────────────
-#define PIR_PIN     13
+#define PIR_PIN     21
 
 // ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
 // Trapesium kiri  : [a, b, c, d]
 // Segitiga        : [a, b, c]
 // Trapesium kanan : [a, b, c, d]
-#define TEMP_DINGIN_A   20.0f
-#define TEMP_DINGIN_B   20.0f
+#define TEMP_DINGIN_A   18.0f
+#define TEMP_DINGIN_B   18.0f
 #define TEMP_DINGIN_C   23.0f
 #define TEMP_DINGIN_D   25.0f
 
@@ -26,22 +28,22 @@
 #define TEMP_NYAMAN_C   27.0f
 
 #define TEMP_PANAS_A    25.0f
-#define TEMP_PANAS_B    27.0f
+#define TEMP_PANAS_B    28.0f
 #define TEMP_PANAS_C    35.0f
 #define TEMP_PANAS_D    35.0f
 
 // ─── Fuzzy Mamdani: Membership Function Kelembaban (%) ─────────
-#define HUMID_RENDAH_A  40.0f
-#define HUMID_RENDAH_B  40.0f
-#define HUMID_RENDAH_C  55.0f
-#define HUMID_RENDAH_D  65.0f
+#define HUMID_RENDAH_A  30.0f
+#define HUMID_RENDAH_B  30.0f
+#define HUMID_RENDAH_C  40.0f
+#define HUMID_RENDAH_D  50.0f
 
-#define HUMID_SEDANG_A  55.0f
-#define HUMID_SEDANG_B  65.0f
-#define HUMID_SEDANG_C  75.0f
+#define HUMID_SEDANG_A  45.0f
+#define HUMID_SEDANG_B  55.0f
+#define HUMID_SEDANG_C  65.0f
 
-#define HUMID_TINGGI_A  65.0f
-#define HUMID_TINGGI_B  75.0f
+#define HUMID_TINGGI_A  60.0f
+#define HUMID_TINGGI_B  70.0f
 #define HUMID_TINGGI_C  90.0f
 #define HUMID_TINGGI_D  90.0f
 
@@ -49,7 +51,7 @@
 #define SETPOINT_RENDAH_A   16.0f
 #define SETPOINT_RENDAH_B   16.0f
 #define SETPOINT_RENDAH_C   18.0f
-#define SETPOINT_RENDAH_D   23.0f
+#define SETPOINT_RENDAH_D   21.0f
 
 #define SETPOINT_SEDANG_A   18.0f
 #define SETPOINT_SEDANG_B   23.0f
