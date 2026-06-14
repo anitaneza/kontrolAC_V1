@@ -19,10 +19,10 @@ public:
     bool isConnected();
     void loop();
 
-    void publish(const char* topic, float value, int decimal = 2);
-    void publish(const char* topic, const char* value);
+    void publish(const char* topic, float value, int decimal = 2, bool retained = true);
+    void publish(const char* topic, const char* value, bool retained = true);
 
-    void subscribe(const char* topic);
+    void subscribe(const char* topic, uint8_t qos = 1);
     void setCallback(MQTTMessageCallback cb);
 
     void setReconnectCallback(MQTTReconnectCallback cb);

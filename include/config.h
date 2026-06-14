@@ -90,7 +90,7 @@
 #define FUZZY_INTERVAL_MS   10000UL
 
 // ─── AC Auto Off Timer ─────────────────────────────────────────
-#define AC_OFF_DELAY_MS         (1UL * 60UL * 1000UL)  // 15 menit
+#define AC_OFF_DELAY_MS         (1000UL * 60UL * 1000UL)  // 15 menit
 
 // ─── WiFi ──────────────────────────────────────────────────────
 #define WIFI_SSID   "backup"
@@ -118,4 +118,4 @@
 #define TOPIC_FUZZY_FIRING_HIGH "2204129/esp1/fuzzy/firing/tinggi"
 
 // ─── SPIFFS ────────────────────────────────────────────────────
-#define IR_JSON_PATH  "/irRawCodes.json"
+#define IR_JSON_PATH  "/irRawCodes.json" 

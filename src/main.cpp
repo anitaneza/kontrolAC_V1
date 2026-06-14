@@ -350,7 +350,7 @@ void loop() {
 
             char jsonStr[2048];
             serializeJson(doc, jsonStr, sizeof(jsonStr));
-            mqtt.publish(TOPIC_CAPTURE_RESULT, jsonStr);
+            mqtt.publish(TOPIC_CAPTURE_RESULT, jsonStr, false);
 
             Serial.printf("[IRReceiver] Capture selesai, %d sinyal. Menunggu konfirmasi...\n",
                           pendingRawLen);

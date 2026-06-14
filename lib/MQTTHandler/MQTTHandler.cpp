@@ -30,9 +30,9 @@ void MQTTHandler::setCallback(MQTTMessageCallback cb) {
     _client.setCallback(_internalCallback);
 }
 
-void MQTTHandler::subscribe(const char* topic) {
-    _client.subscribe(topic);
-    Serial.printf("[MQTT] Subscribe: %s\n", topic);
+void MQTTHandler::subscribe(const char* topic, uint8_t qos) {
+    _client.subscribe(topic, qos);
+    Serial.printf("[MQTT] Subscribe: %s (QoS %d)\n", topic, qos);
 }
 
 void MQTTHandler::connect() {
@@ -62,14 +62,14 @@ void MQTTHandler::loop() {
     _client.loop();
 }
 
-void MQTTHandler::publish(const char* topic, float value, int decimal) {
+void MQTTHandler::publish(const char* topic, float value, int decimal, bool retained) {
     char buf[16];
     dtostrf(value, 1, decimal, buf);
-    _client.publish(topic, buf);
+    _client.publish(topic, buf, retained);
 }
 
-void MQTTHandler::publish(const char* topic, const char* value) {
-    _client.publish(topic, value);
+void MQTTHandler::publish(const char* topic, const char* value, bool retained) {
+    _client.publish(topic, value, retained);
 }
 
 void MQTTHandler::setReconnectCallback(MQTTReconnectCallback cb) {
