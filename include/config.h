@@ -14,6 +14,10 @@
 // ─── PIR Sensor ────────────────────────────────────────────────
 #define PIR_PIN     21
 
+// ─── PIR Majority Vote Filter ──────────────────────────────────
+#define PIR_VOTE_WINDOW_MS       3000UL  // jendela voting 15 detik
+#define PIR_VOTE_THRESHOLD_PCT   50       // threshold majority (%)
+
 // ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
 // Trapesium kiri  : [a, b, c, d]
 // Segitiga        : [a, b, c]

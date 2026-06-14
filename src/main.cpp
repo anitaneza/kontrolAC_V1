@@ -33,6 +33,14 @@ bool          isACOn              = false;
 bool          isEmptyTimerActive  = false;
 unsigned long emptyStartTime      = 0;
 
+// ─── PIR Majority Vote Filter ──────────────────────────────────
+bool          pirDetected         = false;
+bool          pirPrevState        = LOW;
+unsigned long pirStateStartTime   = 0;
+unsigned long pirHighDuration     = 0;
+unsigned long pirLowDuration      = 0;
+unsigned long lastPirVoteTime     = 0;
+
 // ─── Fuzzy ─────────────────────────────────────────────────────
 int           lastSetpoint        = -1;
 unsigned long lastFuzzyTime       = 0;
@@ -198,6 +206,8 @@ void setup() {
 
     roomSensor.begin();
     pir.begin();
+    pirPrevState = pir.isDetected();
+    pirStateStartTime = millis();
     wifi.connect();
 
     mqtt.setCallback(onMqttMessage);
@@ -208,6 +218,7 @@ void setup() {
 
     lastReadTime = millis();
     lastSendTime = millis();
+    lastPirVoteTime = millis();
 
     Serial.println("Sistem siap. State: NORMAL");
 }
@@ -263,8 +274,48 @@ void loop() {
             }
         }
 
-        // Logika PIR
-        bool pirDetected = pir.isDetected();
+        // Logika PIR dengan Durasi-based Majority Vote
+        bool currentPirState = pir.isDetected();
+
+        if (currentPirState != pirPrevState) {
+            unsigned long duration = now - pirStateStartTime;
+            if (pirPrevState == HIGH) {
+                pirHighDuration += duration;
+            } else {
+                pirLowDuration += duration;
+            }
+            pirPrevState = currentPirState;
+            pirStateStartTime = now;
+        }
+
+        if (now - lastPirVoteTime >= PIR_VOTE_WINDOW_MS) {
+            lastPirVoteTime = now;
+
+            // Tutup durasi state yang sedang berlangsung
+            unsigned long currentDuration = now - pirStateStartTime;
+            if (pirPrevState == HIGH) {
+                pirHighDuration += currentDuration;
+            } else {
+                pirLowDuration += currentDuration;
+            }
+
+            unsigned long totalDuration = pirHighDuration + pirLowDuration;
+            if (totalDuration > 0) {
+                int highPercentage = (pirHighDuration * 100) / totalDuration;
+                pirDetected = highPercentage > PIR_VOTE_THRESHOLD_PCT;
+
+                Serial.printf("[PIR] Vote | HIGH: %lums | LOW: %lums (%d%%) → %s\n",
+                              pirHighDuration, pirLowDuration, highPercentage,
+                              pirDetected ? "OCCUPIED" : "EMPTY");
+            } else {
+                pirDetected = false;
+            }
+
+            pirHighDuration   = 0;
+            pirLowDuration    = 0;
+            pirPrevState      = pir.isDetected();
+            pirStateStartTime = now;
+        }
 
         if (pirDetected && !isOccupied) {
             isOccupied         = true;
