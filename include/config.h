@@ -12,16 +12,33 @@
 #define IR_RAW_LEN  139
 
 // ─── PIR Sensor ────────────────────────────────────────────────
-#define PIR_PIN     21
+#define PIR_PIN     27
 
-// ─── PIR Majority Vote Filter ──────────────────────────────────
-#define PIR_VOTE_WINDOW_MS       3000UL  // jendela voting 15 detik
-#define PIR_VOTE_THRESHOLD_PCT   50       // threshold majority (%)
+// ─── Occupancy Counter IR E18-D80NK ────────────────────────────
+#define IR_FRONT_PIN            21
+#define IR_BACK_PIN             22
+#define IR_SENSOR_TIMEOUT_MS    3000UL   // timeout salah satu sensor
 
-// ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
 // Trapesium kiri  : [a, b, c, d]
 // Segitiga        : [a, b, c]
 // Trapesium kanan : [a, b, c, d]
+
+// ─── Fuzzy Mamdani: Membership Function Hunian (Orang) ─────────
+#define OCC_SEDIKIT_A   0.0f
+#define OCC_SEDIKIT_B   0.0f
+#define OCC_SEDIKIT_C   1.0f
+#define OCC_SEDIKIT_D   3.0f
+
+#define OCC_SEDANG_A    2.0f
+#define OCC_SEDANG_B    3.0f
+#define OCC_SEDANG_C    4.0f
+
+#define OCC_BANYAK_A    3.0f
+#define OCC_BANYAK_B    5.0f
+#define OCC_BANYAK_C    6.0f
+#define OCC_BANYAK_D    6.0f
+
+// ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
 #define TEMP_DINGIN_A   18.0f
 #define TEMP_DINGIN_B   18.0f
 #define TEMP_DINGIN_C   23.0f
@@ -37,19 +54,19 @@
 #define TEMP_PANAS_D    35.0f
 
 // ─── Fuzzy Mamdani: Membership Function Kelembaban (%) ─────────
-#define HUMID_RENDAH_A  30.0f
-#define HUMID_RENDAH_B  30.0f
-#define HUMID_RENDAH_C  40.0f
-#define HUMID_RENDAH_D  50.0f
+#define HUMID_KERING_A  30.0f
+#define HUMID_KERING_B  30.0f
+#define HUMID_KERING_C  40.0f
+#define HUMID_KERING_D  50.0f
 
-#define HUMID_SEDANG_A  45.0f
-#define HUMID_SEDANG_B  55.0f
-#define HUMID_SEDANG_C  65.0f
+#define HUMID_NORMAL_A  45.0f
+#define HUMID_NORMAL_B  55.0f
+#define HUMID_NORMAL_C  65.0f
 
-#define HUMID_TINGGI_A  60.0f
-#define HUMID_TINGGI_B  70.0f
-#define HUMID_TINGGI_C  90.0f
-#define HUMID_TINGGI_D  90.0f
+#define HUMID_LEMBAB_A  60.0f
+#define HUMID_LEMBAB_B  70.0f
+#define HUMID_LEMBAB_C  90.0f
+#define HUMID_LEMBAB_D  90.0f
 
 // ─── Fuzzy Mamdani: Membership Function Output Setpoint (°C) ───
 #define SETPOINT_RENDAH_A   16.0f
@@ -67,18 +84,40 @@
 #define SETPOINT_TINGGI_D   30.0f
 
 // ─── Fuzzy Mamdani: Rule Base ──────────────────────────────────
-// rules[suhu][kelembaban] → 0=Rendah, 1=Sedang, 2=Tinggi
-// suhu:      0=Dingin, 1=Nyaman, 2=Panas
-// kelembaban: 0=Rendah, 1=Sedang, 2=Tinggi
-#define RULE_00  2   // Dingin + Rendah  → Tinggi
-#define RULE_01  2   // Dingin + Sedang  → Tinggi
-#define RULE_02  1   // Dingin + Tinggi  → Sedang
-#define RULE_10  2   // Nyaman + Rendah  → Tinggi
-#define RULE_11  1   // Nyaman + Sedang  → Sedang
-#define RULE_12  0   // Nyaman + Tinggi  → Rendah
-#define RULE_20  1   // Panas  + Rendah  → Sedang
-#define RULE_21  0   // Panas  + Sedang  → Rendah
-#define RULE_22  0   // Panas  + Tinggi  → Rendah
+// rules[suhu][kelembaban][hunian] → 0=Rendah, 1=Sedang, 2=Tinggi
+
+// SUHU = DINGIN
+#define RULE_000  2
+#define RULE_001  2
+#define RULE_002  1
+#define RULE_010  2
+#define RULE_011  2
+#define RULE_012  1
+#define RULE_020  1
+#define RULE_021  1
+#define RULE_022  0
+
+// SUHU = NYAMAN
+#define RULE_100  2
+#define RULE_101  2
+#define RULE_102  1
+#define RULE_110  1
+#define RULE_111  1
+#define RULE_112  0
+#define RULE_120  0
+#define RULE_121  0
+#define RULE_122  0
+
+// SUHU = PANAS
+#define RULE_200  1
+#define RULE_201  1
+#define RULE_202  0
+#define RULE_210  0
+#define RULE_211  0
+#define RULE_212  0
+#define RULE_220  0
+#define RULE_221  0
+#define RULE_222  0
 
 // ─── Apps Script ───────────────────────────────────────────────
 #define APPS_SCRIPT_URL   "https://script.google.com/macros/s/AKfycbx6ntzH26KpNRt4Zzrv2HxCc4okhMjO9d_AHOouuFswfhcT52jlP1ZIetC3l5d8-9xR/exec"
