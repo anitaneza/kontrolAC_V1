@@ -7,7 +7,7 @@
 #include "IRRawCodes.h"
 #include "IRTransmitterACController.h"
 #include "IRReceiverCapture.h"
-#include "PIRSensor.h"
+#include "OccupancyCounter.h"
 #include "FuzzyMamdani.h"
 #include "HTTPLogger.h"
 #include <ArduinoJson.h>
@@ -27,19 +27,11 @@ char     pendingCaptureKey[16]   = "";
 uint16_t pendingRawBuf[200]      = {};
 uint16_t pendingRawLen           = 0;
 
-// ─── PIR & AC ──────────────────────────────────────────────────
-bool          isOccupied          = false;
+// ─── Occupancy & AC ────────────────────────────────────────────
+int           lastOccupancyCount  = 0;
 bool          isACOn              = false;
 bool          isEmptyTimerActive  = false;
 unsigned long emptyStartTime      = 0;
-
-// ─── PIR Majority Vote Filter ──────────────────────────────────
-bool          pirDetected         = false;
-bool          pirPrevState        = LOW;
-unsigned long pirStateStartTime   = 0;
-unsigned long pirHighDuration     = 0;
-unsigned long pirLowDuration      = 0;
-unsigned long lastPirVoteTime     = 0;
 
 // ─── Fuzzy ─────────────────────────────────────────────────────
 int           lastSetpoint        = -1;
@@ -53,7 +45,7 @@ unsigned long lastReadTime        = 0;
 unsigned long lastSendTime        = 0;
 
 // ─── Nilai Terakhir untuk StatusLog ────────────────────────────
-String        lastPIRStatus       = "empty";
+String        lastPIRStatus       = "0";
 String        lastACStatus        = "off";
 int           lastACSetpoint      = 0;
 int           lastFuzzySetpoint   = 0;
@@ -69,9 +61,15 @@ TempMF tempMF = {
 };
 
 HumidMF humidMF = {
-    { HUMID_RENDAH_A, HUMID_RENDAH_B, HUMID_RENDAH_C, HUMID_RENDAH_D },
-    { HUMID_SEDANG_A, HUMID_SEDANG_B, HUMID_SEDANG_C },
-    { HUMID_TINGGI_A, HUMID_TINGGI_B, HUMID_TINGGI_C, HUMID_TINGGI_D }
+    { HUMID_KERING_A, HUMID_KERING_B, HUMID_KERING_C, HUMID_KERING_D },
+    { HUMID_NORMAL_A, HUMID_NORMAL_B, HUMID_NORMAL_C },
+    { HUMID_LEMBAB_A, HUMID_LEMBAB_B, HUMID_LEMBAB_C, HUMID_LEMBAB_D }
+};
+
+OccupancyMF occMF = {
+    { OCC_SEDIKIT_A, OCC_SEDIKIT_B, OCC_SEDIKIT_C, OCC_SEDIKIT_D },
+    { OCC_SEDANG_A,  OCC_SEDANG_B,  OCC_SEDANG_C  },
+    { OCC_BANYAK_A,  OCC_BANYAK_B,  OCC_BANYAK_C,  OCC_BANYAK_D  }
 };
 
 SetpointMF setpointMF = {
@@ -81,9 +79,21 @@ SetpointMF setpointMF = {
 };
 
 RuleBase ruleBase = {{
-    { RULE_00, RULE_01, RULE_02 },
-    { RULE_10, RULE_11, RULE_12 },
-    { RULE_20, RULE_21, RULE_22 }
+    {
+        { RULE_000, RULE_001, RULE_002 },
+        { RULE_010, RULE_011, RULE_012 },
+        { RULE_020, RULE_021, RULE_022 }
+    },
+    {
+        { RULE_100, RULE_101, RULE_102 },
+        { RULE_110, RULE_111, RULE_112 },
+        { RULE_120, RULE_121, RULE_122 }
+    },
+    {
+        { RULE_200, RULE_201, RULE_202 },
+        { RULE_210, RULE_211, RULE_212 },
+        { RULE_220, RULE_221, RULE_222 }
+    }
 }};
 
 // ─── Objek ─────────────────────────────────────────────────────
@@ -94,18 +104,16 @@ SPIFFSHandler             spiffs;
 IRRawCodes                irCodes(spiffs, IR_JSON_PATH);
 IRTransmitterACController irTx(IR_TX_PIN, irCodes);
 IRReceiverCapture         irRx(IR_RX_PIN);
-PIRSensor                 pir(PIR_PIN);
-FuzzyMamdani              fuzzy(tempMF, humidMF, setpointMF, ruleBase);
+OccupancyCounter          occupancy(IR_FRONT_PIN, IR_BACK_PIN, IR_SENSOR_TIMEOUT_MS);
+FuzzyMamdani              fuzzy(tempMF, humidMF, occMF, setpointMF, ruleBase);
 HTTPLogger                httpLogger(APPS_SCRIPT_URL);
 
 // ─── Fungsi bantu: kirim StatusLog ─────────────────────────────
 void sendStatusLog() {
-    // MQTT kirim kolom yang berubah
-    mqtt.publish(TOPIC_PIR_STATUS,    lastPIRStatus.c_str());
-    mqtt.publish(TOPIC_AC_STATUS,     lastACStatus.c_str());
+    mqtt.publish(TOPIC_PIR_STATUS,     lastPIRStatus.c_str());
+    mqtt.publish(TOPIC_AC_STATUS,      lastACStatus.c_str());
     mqtt.publish(TOPIC_FUZZY_SETPOINT, (float)lastFuzzySetpoint, 0);
 
-    // Apps Script kirim semua kolom
     httpLogger.sendStatusLog(
         SHEET_STATUS_LOG,
         lastPIRStatus.c_str(),
@@ -169,10 +177,6 @@ void onMqttMessage(const char* topic, const char* payload) {
         if (strcmp(payload, pendingCaptureKey) == 0) {
             irCodes.update(pendingCaptureKey, pendingRawBuf, pendingRawLen);
             Serial.printf("[IRRawCodes] Key '%s' disimpan ke SPIFFS.\n", pendingCaptureKey);
-
-            // Kirim ke IRLog Apps Script
-            // httpLogger.sendIRLog(SHEET_IR_LOG, pendingCaptureKey, "IR raw updated");
-            // Kirim ke IRLog Apps Script dengan raw data
             httpLogger.sendIRLog(
                 SHEET_IR_LOG,
                 pendingCaptureKey,
@@ -205,9 +209,7 @@ void setup() {
     irCodes.load();
 
     roomSensor.begin();
-    pir.begin();
-    pirPrevState = pir.isDetected();
-    pirStateStartTime = millis();
+    occupancy.begin();
     wifi.connect();
 
     mqtt.setCallback(onMqttMessage);
@@ -218,7 +220,6 @@ void setup() {
 
     lastReadTime = millis();
     lastSendTime = millis();
-    lastPirVoteTime = millis();
 
     Serial.println("Sistem siap. State: NORMAL");
 }
@@ -231,6 +232,41 @@ void loop() {
     if (currentState == STATE_NORMAL) {
         unsigned long now = millis();
 
+        // Update occupancy counter setiap loop
+        occupancy.update();
+        int currentCount = occupancy.getCount();
+
+        // Logika AC berdasarkan occupancy
+        if (currentCount > 0 && !isACOn) {
+            // Ada orang, AC belum nyala
+            isEmptyTimerActive = false;
+            turnACOn();
+        } else if (currentCount == 0 && isACOn && !isEmptyTimerActive) {
+            // Tidak ada orang, mulai timer
+            isEmptyTimerActive = true;
+            emptyStartTime     = now;
+            Serial.println("[OCC] Ruangan kosong, timer mulai.");
+        } else if (currentCount == 0 && isEmptyTimerActive) {
+            // Cek timer
+            if (now - emptyStartTime >= AC_OFF_DELAY_MS) {
+                isEmptyTimerActive = false;
+                Serial.println("[OCC] Timer habis, matikan AC.");
+                turnACOff();
+            }
+        } else if (currentCount > 0 && isEmptyTimerActive) {
+            // Ada orang lagi sebelum timer habis, reset timer
+            isEmptyTimerActive = false;
+            Serial.println("[OCC] Ada orang lagi, timer direset.");
+        }
+
+        // Cek perubahan jumlah occupancy untuk publish
+        if (currentCount != lastOccupancyCount) {
+            lastOccupancyCount = currentCount;
+            lastPIRStatus      = String(currentCount);
+            statusChanged      = true;
+            Serial.printf("[OCC] Count berubah: %d\n", currentCount);
+        }
+
         // Baca sensor setiap 1 detik
         if (now - lastReadTime >= DATA_READ_INTERVAL_MS) {
             lastReadTime = now;
@@ -239,11 +275,10 @@ void loop() {
             float kelembaban = roomSensor.readHumidity();
 
             if (roomSensor.isValid()) {
-                // Kalibrasi
                 suhu       += DHT_TEMP_OFFSET;
                 kelembaban += DHT_HUMID_OFFSET;
 
-                suhuAccum      += suhu;
+                suhuAccum       += suhu;
                 kelembabanAccum += kelembaban;
                 readCount++;
             }
@@ -257,87 +292,17 @@ void loop() {
                 float suhuAvg       = suhuAccum / readCount;
                 float kelembabanAvg = kelembabanAccum / readCount;
 
-                // Reset akumulator
                 suhuAccum       = 0;
                 kelembabanAccum = 0;
                 readCount       = 0;
 
-                // Publish MQTT
                 mqtt.publish(TOPIC_ROOM_TEMP,  suhuAvg);
                 mqtt.publish(TOPIC_ROOM_HUMID, kelembabanAvg);
 
-                // Kirim ke Apps Script
                 httpLogger.sendSensorLog(SHEET_SENSOR_LOG, suhuAvg, kelembabanAvg);
 
                 Serial.printf("[Sensor] Avg Suhu: %.2f°C | Avg Kelembaban: %.2f%%\n",
                               suhuAvg, kelembabanAvg);
-            }
-        }
-
-        // Logika PIR dengan Durasi-based Majority Vote
-        bool currentPirState = pir.isDetected();
-
-        if (currentPirState != pirPrevState) {
-            unsigned long duration = now - pirStateStartTime;
-            if (pirPrevState == HIGH) {
-                pirHighDuration += duration;
-            } else {
-                pirLowDuration += duration;
-            }
-            pirPrevState = currentPirState;
-            pirStateStartTime = now;
-        }
-
-        if (now - lastPirVoteTime >= PIR_VOTE_WINDOW_MS) {
-            lastPirVoteTime = now;
-
-            // Tutup durasi state yang sedang berlangsung
-            unsigned long currentDuration = now - pirStateStartTime;
-            if (pirPrevState == HIGH) {
-                pirHighDuration += currentDuration;
-            } else {
-                pirLowDuration += currentDuration;
-            }
-
-            unsigned long totalDuration = pirHighDuration + pirLowDuration;
-            if (totalDuration > 0) {
-                int highPercentage = (pirHighDuration * 100) / totalDuration;
-                pirDetected = highPercentage > PIR_VOTE_THRESHOLD_PCT;
-
-                Serial.printf("[PIR] Vote | HIGH: %lums | LOW: %lums (%d%%) → %s\n",
-                              pirHighDuration, pirLowDuration, highPercentage,
-                              pirDetected ? "OCCUPIED" : "EMPTY");
-            } else {
-                pirDetected = false;
-            }
-
-            pirHighDuration   = 0;
-            pirLowDuration    = 0;
-            pirPrevState      = pir.isDetected();
-            pirStateStartTime = now;
-        }
-
-        if (pirDetected && !isOccupied) {
-            isOccupied         = true;
-            isEmptyTimerActive = false;
-            lastPIRStatus      = "detected";
-            statusChanged      = true;
-            Serial.println("[PIR] Orang terdeteksi.");
-            turnACOn();
-
-        } else if (!pirDetected && isOccupied) {
-            isOccupied         = false;
-            isEmptyTimerActive = true;
-            emptyStartTime     = now;
-            lastPIRStatus      = "empty";
-            statusChanged      = true;
-            Serial.println("[PIR] Ruangan kosong, timer mulai.");
-
-        } else if (!pirDetected && isEmptyTimerActive) {
-            if (now - emptyStartTime >= AC_OFF_DELAY_MS) {
-                isEmptyTimerActive = false;
-                Serial.println("[PIR] Timer habis, matikan AC.");
-                turnACOff();
             }
         }
 
@@ -357,15 +322,15 @@ void loop() {
                 suhu       += DHT_TEMP_OFFSET;
                 kelembaban += DHT_HUMID_OFFSET;
 
-                FuzzyResult result = fuzzy.compute(suhu, kelembaban);
+                FuzzyResult result = fuzzy.compute(suhu, kelembaban, (float)currentCount);
 
-                Serial.printf("[Fuzzy] Suhu: %.2f | Kelembaban: %.2f\n", suhu, kelembaban);
+                Serial.printf("[Fuzzy] Suhu: %.2f | Kelembaban: %.2f | Orang: %d\n",
+                              suhu, kelembaban, currentCount);
                 Serial.printf("[Fuzzy] Firing → Rendah: %.2f | Sedang: %.2f | Tinggi: %.2f\n",
                               result.firingRendah, result.firingSedang, result.firingTinggi);
                 Serial.printf("[Fuzzy] Setpoint crisp: %.2f → %d°C\n",
                               result.crispSetpoint, result.setpointInt);
 
-                // Kirim ke AC dan log hanya kalau setpoint berubah
                 if (result.setpointInt != lastSetpoint) {
                     char keyBuf[4];
                     snprintf(keyBuf, sizeof(keyBuf), "%d", result.setpointInt);
@@ -378,7 +343,6 @@ void loop() {
 
                     Serial.printf("[IR] Setpoint dikirim: %d°C\n", result.setpointInt);
 
-                    // Publish firing ke MQTT
                     mqtt.publish(TOPIC_FUZZY_FIRING_LOW,  result.firingRendah);
                     mqtt.publish(TOPIC_FUZZY_FIRING_MID,  result.firingSedang);
                     mqtt.publish(TOPIC_FUZZY_FIRING_HIGH, result.firingTinggi);
@@ -401,7 +365,7 @@ void loop() {
 
             char jsonStr[2048];
             serializeJson(doc, jsonStr, sizeof(jsonStr));
-            mqtt.publish(TOPIC_CAPTURE_RESULT, jsonStr, false);
+            mqtt.publish(TOPIC_CAPTURE_RESULT, jsonStr);
 
             Serial.printf("[IRReceiver] Capture selesai, %d sinyal. Menunggu konfirmasi...\n",
                           pendingRawLen);
