@@ -216,6 +216,19 @@ void onMqttMessage(const char* topic, const char* payload) {
         return;
     }
 
+    if (strcmp(topic, TOPIC_AC_OCCUPANCY) == 0 && acMode == AC_MANUAL) {
+        int occ = atoi(payload);
+        if (occ >= 0 && occ <= 10) {
+            occupancy.setCount(occ);
+            lastOccupancyCount = occ;
+            lastPIRStatus      = String(occ);
+            statusChanged      = true;
+            mqtt.publish(TOPIC_AC_OCCUPANCY, "ok");
+            Serial.printf("[Manual] Occupancy diatur: %d\n", occ);
+        }
+        return;
+    }
+
     if (strcmp(topic, TOPIC_CAPTURE) == 0 && currentState == STATE_CONFIG) {
         strncpy(pendingCaptureKey, payload, sizeof(pendingCaptureKey) - 1);
         currentState = STATE_CAPTURING;
@@ -253,6 +266,7 @@ void onMqttReconnect() {
     mqtt.subscribe(TOPIC_AC_MODE);
     mqtt.subscribe(TOPIC_AC_POWER);
     mqtt.subscribe(TOPIC_AC_SETPOINT);
+    mqtt.subscribe(TOPIC_AC_OCCUPANCY);
 }
 
 // ─── Setup ─────────────────────────────────────────────────────

@@ -157,6 +157,7 @@
 #define TOPIC_FUZZY_FIRING_HIGH "2204129/esp1/fuzzy/firing/tinggi"
 #define TOPIC_AC_POWER         "2204129/esp1/ac/power"
 #define TOPIC_AC_SETPOINT      "2204129/esp1/ac/setpoint"
+#define TOPIC_AC_OCCUPANCY    "2204129/esp1/ac/occupancy"
 
 // ─── Apps Script ───────────────────────────────────────────────
 #define APPS_SCRIPT_URL   "https://script.google.com/macros/s/AKfycbx6ntzH26KpNRt4Zzrv2HxCc4okhMjO9d_AHOouuFswfhcT52jlP1ZIetC3l5d8-9xR/exec"

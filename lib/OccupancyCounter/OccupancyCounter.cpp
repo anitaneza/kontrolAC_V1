@@ -80,8 +80,14 @@ void OccupancyCounter::update() {
 int OccupancyCounter::getCount() {
     return _count;
 }
-*/
 
+void OccupancyCounter::setCount(int count) {
+    _count = max(0, count);
+    _resetSeq();
+    _cooldownUntil = millis() + OCC_COOLDOWN_MS;
+    Serial.printf("[OCC] Count diatur manual: %d\n", _count);
+}
+*/
 // ============================================================
 // KODE BARU — overlap-based dengan debounce + cooldown
 // ============================================================
@@ -225,4 +231,11 @@ void OccupancyCounter::update() {
 
 int OccupancyCounter::getCount() {
     return _count;
+}
+
+void OccupancyCounter::setCount(int count) {
+    _count = max(0, count);
+    _resetSeq();
+    _cooldownUntil = millis() + OCC_COOLDOWN_MS;
+    Serial.printf("[OCC] Count diatur manual: %d\n", _count);
 }

@@ -9,6 +9,7 @@ public:
     void begin();
     void update();
     int  getCount();
+    void setCount(int count);
 
 private:
     uint8_t       _pinFront;
