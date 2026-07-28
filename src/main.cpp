@@ -185,6 +185,37 @@ void onMqttMessage(const char* topic, const char* payload) {
         return;
     }
 
+    if (strcmp(topic, TOPIC_AC_POWER) == 0 && acMode == AC_MANUAL) {
+        if (strcmp(payload, "on") == 0) {
+            turnACOn();
+            mqtt.publish(TOPIC_AC_POWER, "ok");
+        } else if (strcmp(payload, "off") == 0) {
+            turnACOff();
+            mqtt.publish(TOPIC_AC_POWER, "ok");
+        }
+        return;
+    }
+
+    if (strcmp(topic, TOPIC_AC_SETPOINT) == 0 && acMode == AC_MANUAL) {
+        int setpoint = atoi(payload);
+        if (setpoint >= 16 && setpoint <= 30) {
+            char keyBuf[4];
+            snprintf(keyBuf, sizeof(keyBuf), "%d", setpoint);
+            irTx.sendKey(keyBuf);
+
+            lastSetpoint      = setpoint;
+            lastACSetpoint    = setpoint;
+            lastFuzzySetpoint = setpoint;
+            lastFuzzyTime     = millis();
+            statusChanged     = true;
+
+            mqtt.publish(TOPIC_AC_SETPOINT, "ok");
+            mqtt.publish(TOPIC_FUZZY_SETPOINT, (float)setpoint, 0);
+            Serial.printf("[Manual] Setpoint AC: %d°C\n", setpoint);
+        }
+        return;
+    }
+
     if (strcmp(topic, TOPIC_CAPTURE) == 0 && currentState == STATE_CONFIG) {
         strncpy(pendingCaptureKey, payload, sizeof(pendingCaptureKey) - 1);
         currentState = STATE_CAPTURING;
@@ -220,6 +251,8 @@ void onMqttReconnect() {
     mqtt.subscribe(TOPIC_CAPTURE);
     mqtt.subscribe(TOPIC_CAPTURE_CONFIRM);
     mqtt.subscribe(TOPIC_AC_MODE);
+    mqtt.subscribe(TOPIC_AC_POWER);
+    mqtt.subscribe(TOPIC_AC_SETPOINT);
 }
 
 // ─── Setup ─────────────────────────────────────────────────────
