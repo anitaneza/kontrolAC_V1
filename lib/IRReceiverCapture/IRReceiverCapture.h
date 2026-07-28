@@ -4,7 +4,7 @@
 #include <IRrecv.h>
 #include <IRutils.h>
 
-#define CAPTURE_BUF_SIZE 200
+#define CAPTURE_BUF_SIZE 211
 
 class IRReceiverCapture {
 public:

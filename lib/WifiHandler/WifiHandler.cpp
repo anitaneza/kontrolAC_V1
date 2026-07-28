@@ -7,8 +7,16 @@ WifiHandler::WifiHandler(const char* ssid, const char* password)
 {
 }
 
+void WifiHandler::begin() {
+    WiFi.setAutoReconnect(true);
+    WiFi.persistent(true);
+    WiFi.mode(WIFI_STA);
+
+    connect();
+}
+
 void WifiHandler::connect() {
-    Serial.print("Menghubungkan ke WiFi: ");
+    Serial.print("[WiFi] Menghubungkan ke: ");
     Serial.println(_ssid);
 
     WiFi.begin(_ssid, _password);
@@ -21,10 +29,23 @@ void WifiHandler::waitUntilConnected() {
         Serial.print(".");
     }
     Serial.println();
-    Serial.print("WiFi terhubung. IP: ");
+    Serial.print("[WiFi] Terhubung. IP: ");
     Serial.println(WiFi.localIP());
 }
 
 bool WifiHandler::isConnected() {
     return WiFi.status() == WL_CONNECTED;
+}
+
+void WifiHandler::loop() {
+    if (WiFi.status() != WL_CONNECTED) {
+        static unsigned long lastTry = 0;
+        unsigned long now = millis();
+
+        if (now - lastTry >= 5000) {
+            lastTry = now;
+            Serial.println("[WiFi] Koneksi putus, mencoba reconnect...");
+            WiFi.reconnect();
+        }
+    }
 }

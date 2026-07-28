@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 #include "SPIFFSHandler.h"
 
-#define MAX_RAW_LEN 200
+#define MAX_RAW_LEN 211
 
 class IRRawCodes {
 public:

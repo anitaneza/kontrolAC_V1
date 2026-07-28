@@ -41,15 +41,14 @@ void MQTTHandler::connect() {
 }
 
 void MQTTHandler::reconnect() {
-    while (!_client.connected()) {
-        Serial.print("[MQTT] Menghubungkan ke broker...");
-        if (_client.connect(_clientId)) {
-            Serial.println(" terhubung.");
-            if (_reconnectCallback) _reconnectCallback();
-        } else {
-            Serial.printf(" gagal, rc=%d. Coba lagi 3 detik...\n", _client.state());
-            delay(3000);
-        }
+    if (_client.connected()) return;
+
+    Serial.print("[MQTT] Menghubungkan ke broker...");
+    if (_client.connect(_clientId)) {
+        Serial.println(" terhubung.");
+        if (_reconnectCallback) _reconnectCallback();
+    } else {
+        Serial.printf(" gagal, rc=%d\n", _client.state());
     }
 }
 

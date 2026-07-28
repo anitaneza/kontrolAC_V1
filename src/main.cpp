@@ -22,9 +22,16 @@ enum SystemState {
 
 SystemState currentState         = STATE_NORMAL;
 
+// ─── AC Mode ────────────────────────────────────────────────────
+enum ACMode {
+    AC_AUTO,
+    AC_MANUAL
+};
+ACMode acMode = AC_AUTO;
+
 // ─── IR Capture ────────────────────────────────────────────────
 char     pendingCaptureKey[16]   = "";
-uint16_t pendingRawBuf[200]      = {};
+uint16_t pendingRawBuf[CAPTURE_BUF_SIZE]      = {};
 uint16_t pendingRawLen           = 0;
 
 // ─── Occupancy & AC ────────────────────────────────────────────
@@ -165,6 +172,19 @@ void onMqttMessage(const char* topic, const char* payload) {
         return;
     }
 
+    if (strcmp(topic, TOPIC_AC_MODE) == 0) {
+        if (strcmp(payload, "auto") == 0) {
+            acMode = AC_AUTO;
+            mqtt.publish(TOPIC_AC_MODE, "berhasil auto");
+            Serial.println("[AC Mode] → AUTO");
+        } else if (strcmp(payload, "manual") == 0) {
+            acMode = AC_MANUAL;
+            mqtt.publish(TOPIC_AC_MODE, "berhasil manual");
+            Serial.println("[AC Mode] → MANUAL");
+        }
+        return;
+    }
+
     if (strcmp(topic, TOPIC_CAPTURE) == 0 && currentState == STATE_CONFIG) {
         strncpy(pendingCaptureKey, payload, sizeof(pendingCaptureKey) - 1);
         currentState = STATE_CAPTURING;
@@ -199,6 +219,7 @@ void onMqttReconnect() {
     mqtt.subscribe(TOPIC_MODE);
     mqtt.subscribe(TOPIC_CAPTURE);
     mqtt.subscribe(TOPIC_CAPTURE_CONFIRM);
+    mqtt.subscribe(TOPIC_AC_MODE);
 }
 
 // ─── Setup ─────────────────────────────────────────────────────
@@ -210,7 +231,7 @@ void setup() {
 
     roomSensor.begin();
     occupancy.begin();
-    wifi.connect();
+    wifi.begin();
 
     mqtt.setCallback(onMqttMessage);
     mqtt.setReconnectCallback(onMqttReconnect);
@@ -226,6 +247,7 @@ void setup() {
 
 // ─── Loop ──────────────────────────────────────────────────────
 void loop() {
+    wifi.loop();
     mqtt.loop();
 
     // ── STATE: NORMAL ──────────────────────────────────────────
@@ -236,27 +258,25 @@ void loop() {
         occupancy.update();
         int currentCount = occupancy.getCount();
 
-        // Logika AC berdasarkan occupancy
-        if (currentCount > 0 && !isACOn) {
-            // Ada orang, AC belum nyala
-            isEmptyTimerActive = false;
-            turnACOn();
-        } else if (currentCount == 0 && isACOn && !isEmptyTimerActive) {
-            // Tidak ada orang, mulai timer
-            isEmptyTimerActive = true;
-            emptyStartTime     = now;
-            Serial.println("[OCC] Ruangan kosong, timer mulai.");
-        } else if (currentCount == 0 && isEmptyTimerActive) {
-            // Cek timer
-            if (now - emptyStartTime >= AC_OFF_DELAY_MS) {
+        // Logika AC berdasarkan occupancy (hanya mode AUTO)
+        if (acMode == AC_AUTO) {
+            if (currentCount > 0 && !isACOn) {
                 isEmptyTimerActive = false;
-                Serial.println("[OCC] Timer habis, matikan AC.");
-                turnACOff();
+                turnACOn();
+            } else if (currentCount == 0 && isACOn && !isEmptyTimerActive) {
+                isEmptyTimerActive = true;
+                emptyStartTime     = now;
+                Serial.println("[OCC] Ruangan kosong, timer mulai.");
+            } else if (currentCount == 0 && isEmptyTimerActive) {
+                if (now - emptyStartTime >= AC_OFF_DELAY_MS) {
+                    isEmptyTimerActive = false;
+                    Serial.println("[OCC] Timer habis, matikan AC.");
+                    turnACOff();
+                }
+            } else if (currentCount > 0 && isEmptyTimerActive) {
+                isEmptyTimerActive = false;
+                Serial.println("[OCC] Ada orang lagi, timer direset.");
             }
-        } else if (currentCount > 0 && isEmptyTimerActive) {
-            // Ada orang lagi sebelum timer habis, reset timer
-            isEmptyTimerActive = false;
-            Serial.println("[OCC] Ada orang lagi, timer direset.");
         }
 
         // Cek perubahan jumlah occupancy untuk publish
@@ -332,16 +352,17 @@ void loop() {
                               result.crispSetpoint, result.setpointInt);
 
                 if (result.setpointInt != lastSetpoint) {
-                    char keyBuf[4];
-                    snprintf(keyBuf, sizeof(keyBuf), "%d", result.setpointInt);
-                    irTx.sendKey(keyBuf);
-
                     lastSetpoint      = result.setpointInt;
                     lastACSetpoint    = result.setpointInt;
                     lastFuzzySetpoint = result.setpointInt;
                     statusChanged     = true;
 
-                    Serial.printf("[IR] Setpoint dikirim: %d°C\n", result.setpointInt);
+                    if (acMode == AC_AUTO) {
+                        char keyBuf[4];
+                        snprintf(keyBuf, sizeof(keyBuf), "%d", result.setpointInt);
+                        irTx.sendKey(keyBuf);
+                        Serial.printf("[IR] Setpoint dikirim: %d°C\n", result.setpointInt);
+                    }
 
                     mqtt.publish(TOPIC_FUZZY_FIRING_LOW,  result.firingRendah);
                     mqtt.publish(TOPIC_FUZZY_FIRING_MID,  result.firingSedang);

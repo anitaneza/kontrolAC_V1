@@ -11,7 +11,7 @@ void IRTransmitterACController::begin() {
 }
 
 bool IRTransmitterACController::sendKey(const char* key) {
-    uint16_t rawBuf[200];
+    uint16_t rawBuf[MAX_RAW_LEN];
     uint16_t rawLen = 0;
 
     if (!_rawCodes.get(key, rawBuf, rawLen)) {
