@@ -33,7 +33,7 @@
 #define OCC_SEDANG_B    4.0f
 #define OCC_SEDANG_C    7.0f
 
-#define OCC_BANYAK_A    5.0f
+#define OCC_BANYAK_A    6.0f
 #define OCC_BANYAK_B    8.0f
 #define OCC_BANYAK_C    9.0f
 #define OCC_BANYAK_D    10.0f
@@ -42,15 +42,15 @@
 #define TEMP_DINGIN_A   16.0f
 #define TEMP_DINGIN_B   18.0f
 #define TEMP_DINGIN_C   22.0f
-#define TEMP_DINGIN_D   24.0f
+#define TEMP_DINGIN_D   25.0f
 
 #define TEMP_NYAMAN_A   23.0f
 #define TEMP_NYAMAN_B   25.0f
-#define TEMP_NYAMAN_C   27.0f
+#define TEMP_NYAMAN_C   28.0f
 
 #define TEMP_PANAS_A    27.0f
-#define TEMP_PANAS_B    28.0f
-#define TEMP_PANAS_C    30.0f
+#define TEMP_PANAS_B    29.0f
+#define TEMP_PANAS_C    31.0f
 #define TEMP_PANAS_D    35.0f
 
 // ─── Fuzzy Mamdani: Membership Function Kelembaban (%) ─────────
@@ -60,11 +60,11 @@
 #define HUMID_KERING_D  55.0f
 
 #define HUMID_NORMAL_A  50.0f
-#define HUMID_NORMAL_B  60.0f
-#define HUMID_NORMAL_C  70.0f
+#define HUMID_NORMAL_B  65.0f
+#define HUMID_NORMAL_C  80.0f
 
-#define HUMID_LEMBAB_A  60.0f
-#define HUMID_LEMBAB_B  75.0f
+#define HUMID_LEMBAB_A  70.0f
+#define HUMID_LEMBAB_B  80.0f
 #define HUMID_LEMBAB_C  90.0f
 #define HUMID_LEMBAB_D  100.0f
 
@@ -104,16 +104,16 @@
 #define RULE_110  1
 #define RULE_111  1
 #define RULE_112  0
-#define RULE_120  0
-#define RULE_121  0
-#define RULE_122  0
+#define RULE_120  1
+#define RULE_121  1
+#define RULE_122  1
 
 // SUHU = PANAS
 #define RULE_200  1
 #define RULE_201  1
 #define RULE_202  0
-#define RULE_210  0
-#define RULE_211  0
+#define RULE_210  1
+#define RULE_211  1
 #define RULE_212  0
 #define RULE_220  0
 #define RULE_221  0
@@ -128,7 +128,7 @@
 #define FUZZY_INTERVAL_MS   (5UL * 60UL * 1000UL)
 
 // ─── AC Auto Off Timer ─────────────────────────────────────────
-#define AC_OFF_DELAY_MS         (10UL * 60UL * 1000UL)  // 15 menit
+#define AC_OFF_DELAY_MS         (SERIAL_5E2 * 60UL * 1000UL)  // 15 menit
 
 // ─── WiFi ──────────────────────────────────────────────────────
 #define WIFI_SSID   "sppg kamal"
