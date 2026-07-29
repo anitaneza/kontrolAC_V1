@@ -44,6 +44,13 @@ private:
 
     unsigned long _cooldownUntil;
 
+    // ═══════════ KODE BARU V3 (first clear + cocok niat-hasil + event timeout) ═══════════
+    unsigned long _eventStartTime;
+    bool          _firstClearCaptured;
+    bool          _firstClearIsFront;
+    unsigned long _partialClearStartTime;
+    bool          _partialIsFrontClear;
+
     void _resetSeq();
     void _debounceSensor(bool raw, bool &state, unsigned long &debounceTime,
                          bool &blocked, unsigned long &blockSince, unsigned long now);
