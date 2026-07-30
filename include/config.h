@@ -127,6 +127,9 @@
 // ─── Fuzzy: Interval komputasi ─────────────────────────────────
 #define FUZZY_INTERVAL_MS   (5UL * 60UL * 1000UL)
 
+// ─── AC Initial Setpoint (saat pertama nyala, sebelum fuzzy) ───
+#define INITIAL_SETPOINT    18
+
 // ─── AC Auto Off Timer ─────────────────────────────────────────
 #define AC_OFF_DELAY_MS         (SERIAL_5E2 * 60UL * 1000UL)  // 15 menit
 

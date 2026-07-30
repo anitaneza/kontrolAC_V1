@@ -135,13 +135,20 @@ void sendStatusLog() {
 void turnACOn() {
     if (isACOn) return;
     irTx.sendKey("on");
+    delay(100);
+    char initKey[4];
+    snprintf(initKey, sizeof(initKey), "%d", INITIAL_SETPOINT);
+    irTx.sendKey(initKey);
     isACOn             = true;
     isEmptyTimerActive = false;
-    lastSetpoint       = -1;
+    lastSetpoint       = INITIAL_SETPOINT;
+    lastACSetpoint     = INITIAL_SETPOINT;
+    lastFuzzySetpoint  = INITIAL_SETPOINT;
+    lastFuzzyTime      = millis();
     lastACStatus       = "on";
     statusChanged      = true;
     mqtt.publish(TOPIC_AC_STATUS, "on");
-    Serial.println("[AC] Dinyalakan.");
+    Serial.printf("[AC] Dinyalakan, setpoint awal %d°C.\n", INITIAL_SETPOINT);
 }
 
 void turnACOff() {
