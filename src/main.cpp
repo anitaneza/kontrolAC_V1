@@ -216,15 +216,15 @@ void onMqttMessage(const char* topic, const char* payload) {
         return;
     }
 
-    if (strcmp(topic, TOPIC_AC_OCCUPANCY) == 0 && acMode == AC_MANUAL) {
+    if (strcmp(topic, TOPIC_AC_OCCUPANCY) == 0) {
         int occ = atoi(payload);
         if (occ >= 0 && occ <= 10) {
             occupancy.setCount(occ);
             lastOccupancyCount = occ;
             lastPIRStatus      = String(occ);
             statusChanged      = true;
-            mqtt.publish(TOPIC_AC_OCCUPANCY, "ok");
-            Serial.printf("[Manual] Occupancy diatur: %d\n", occ);
+            mqtt.publish(TOPIC_AC_OCCUPANCY_RSP, "ok");
+            Serial.printf("[OCC] Override manual: %d\n", occ);
         }
         return;
     }
