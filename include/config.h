@@ -26,47 +26,47 @@
 // ─── Fuzzy Mamdani: Membership Function Hunian (Orang) ─────────
 #define OCC_SEDIKIT_A   0.0f
 #define OCC_SEDIKIT_B   1.0f
-#define OCC_SEDIKIT_C   3.0f
-#define OCC_SEDIKIT_D   4.0f
+#define OCC_SEDIKIT_C   2.0f
+#define OCC_SEDIKIT_D   3.0f
 
-#define OCC_SEDANG_A    3.0f
-#define OCC_SEDANG_B    4.0f
-#define OCC_SEDANG_C    7.0f
+#define OCC_SEDANG_A    2.0f
+#define OCC_SEDANG_B    3.0f
+#define OCC_SEDANG_C    5.0f
 
-#define OCC_BANYAK_A    6.0f
-#define OCC_BANYAK_B    8.0f
-#define OCC_BANYAK_C    9.0f
-#define OCC_BANYAK_D    10.0f
+#define OCC_BANYAK_A    4.0f
+#define OCC_BANYAK_B    5.0f
+#define OCC_BANYAK_C    7.0f
+#define OCC_BANYAK_D    7.0f
 
 // ─── Fuzzy Mamdani: Membership Function Suhu (°C) ──────────────
-#define TEMP_DINGIN_A   16.0f
+#define TEMP_DINGIN_A   18.0f
 #define TEMP_DINGIN_B   18.0f
 #define TEMP_DINGIN_C   22.0f
-#define TEMP_DINGIN_D   25.0f
+#define TEMP_DINGIN_D   24.0f
 
 #define TEMP_NYAMAN_A   23.0f
-#define TEMP_NYAMAN_B   25.0f
-#define TEMP_NYAMAN_C   28.0f
+#define TEMP_NYAMAN_B   25.5f
+#define TEMP_NYAMAN_C   26.5f
 
-#define TEMP_PANAS_A    27.0f
-#define TEMP_PANAS_B    29.0f
-#define TEMP_PANAS_C    31.0f
-#define TEMP_PANAS_D    35.0f
+#define TEMP_PANAS_A    25.0f
+#define TEMP_PANAS_B    28.0f
+#define TEMP_PANAS_C    32.0f
+#define TEMP_PANAS_D    32.0f
 
 // ─── Fuzzy Mamdani: Membership Function Kelembaban (%) ─────────
-#define HUMID_KERING_A  20.0f
-#define HUMID_KERING_B  30.0f
+#define HUMID_KERING_A  35.0f
+#define HUMID_KERING_B  35.0f
 #define HUMID_KERING_C  50.0f
 #define HUMID_KERING_D  55.0f
 
 #define HUMID_NORMAL_A  50.0f
-#define HUMID_NORMAL_B  65.0f
-#define HUMID_NORMAL_C  80.0f
+#define HUMID_NORMAL_B  60.0f
+#define HUMID_NORMAL_C  70.0f
 
-#define HUMID_LEMBAB_A  70.0f
-#define HUMID_LEMBAB_B  80.0f
+#define HUMID_LEMBAB_A  65.0f
+#define HUMID_LEMBAB_B  75.0f
 #define HUMID_LEMBAB_C  90.0f
-#define HUMID_LEMBAB_D  100.0f
+#define HUMID_LEMBAB_D  90.0f
 
 // ─── Fuzzy Mamdani: Membership Function Output Setpoint (°C) ───
 #define SETPOINT_RENDAH_A   17.0f
@@ -74,9 +74,9 @@
 #define SETPOINT_RENDAH_C   22.0f
 #define SETPOINT_RENDAH_D   24.0f
 
-#define SETPOINT_SEDANG_A   23.0f
+#define SETPOINT_SEDANG_A   22.5f
 #define SETPOINT_SEDANG_B   25.0f
-#define SETPOINT_SEDANG_C   30.0f
+#define SETPOINT_SEDANG_C   28.5f
 
 #define SETPOINT_TINGGI_A   25.0f
 #define SETPOINT_TINGGI_B   30.0f
@@ -131,7 +131,7 @@
 #define INITIAL_SETPOINT    18
 
 // ─── AC Auto Off Timer ─────────────────────────────────────────
-#define AC_OFF_DELAY_MS         (SERIAL_5E2 * 60UL * 1000UL)  // 15 menit
+#define AC_OFF_DELAY_MS         (5UL * 60UL * 1000UL)  // 15 menit
 
 // ─── WiFi ──────────────────────────────────────────────────────
 #define WIFI_SSID   "sppg kamal"

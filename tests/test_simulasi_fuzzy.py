@@ -12,10 +12,10 @@ class FuzzySimulationTests(unittest.TestCase):
         result = compute_fuzzy(27.32, 56.23, 5.0)
 
         self.assertAlmostEqual(result.firing[0], 0.0, places=6)
-        self.assertAlmostEqual(result.firing[1], 0.2266666667, places=6)
+        self.assertAlmostEqual(result.firing[1], 0.16, places=6)
         self.assertAlmostEqual(result.firing[2], 0.0, places=6)
-        self.assertAlmostEqual(result.crisp_setpoint, 26.3381223, places=5)
-        self.assertEqual(result.setpoint_int, 26)
+        self.assertAlmostEqual(result.crisp_setpoint, 25.4601942, places=5)
+        self.assertEqual(result.setpoint_int, 25)
 
     def test_firmware_boundary_and_no_firing_fallback(self):
         self.assertEqual(trap_membership(16.0, (16.0, 18.0, 22.0, 25.0)), 0.0)

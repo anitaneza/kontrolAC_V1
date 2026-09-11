@@ -27,7 +27,7 @@ OUTPUT_UNIVERSE = np.arange(16.0, 30.0 + 0.05, 0.1)
 
 TEMP_MF: Mapping[str, MF] = {
     "dingin": (16.0, 18.0, 22.0, 25.0),
-    "nyaman": (23.0, 25.0, 28.0),
+    "nyaman": (23.0, 25.5, 27.5),
     "panas": (27.0, 29.0, 31.0, 35.0),
 }
 HUMID_MF: Mapping[str, MF] = {
@@ -42,7 +42,7 @@ OCC_MF: Mapping[str, MF] = {
 }
 SETPOINT_MF: Mapping[str, MF] = {
     "rendah": (17.0, 18.0, 22.0, 24.0),
-    "sedang": (23.0, 25.0, 30.0),
+    "sedang": (22.5, 25.0, 28.5),
     "tinggi": (25.0, 30.0, 32.0, 33.0),
 }
 
